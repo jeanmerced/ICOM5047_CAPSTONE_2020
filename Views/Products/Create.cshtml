@@ -1,0 +1,64 @@
+@model ICTS_API.Models.Product
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Create</title>
+</head>
+<body>
+
+<h4>Product</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="LotID" class="control-label"></label>
+                <input asp-for="LotID" class="form-control" />
+                <span asp-validation-for="LotID" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ProductName" class="control-label"></label>
+                <input asp-for="ProductName" class="form-control" />
+                <span asp-validation-for="ProductName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ExpirationDate" class="control-label"></label>
+                <input asp-for="ExpirationDate" class="form-control" />
+                <span asp-validation-for="ExpirationDate" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="VirtualSiteName" class="control-label"></label>
+                <input asp-for="VirtualSiteName" class="form-control" />
+                <span asp-validation-for="VirtualSiteName" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="WarningPriority" class="control-label"></label>
+                <input asp-for="WarningPriority" class="form-control" />
+                <span asp-validation-for="WarningPriority" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="DiscrepancyExists" /> @Html.DisplayNameFor(model => model.DiscrepancyExists)
+                </label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,59 @@
+@model ICTS_API.Models.Cart
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Create</title>
+</head>
+<body>
+
+<h4>Cart</h4>
+<hr />
+<div class="row">
+    <div class="col-md-4">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="form-group">
+                <label asp-for="TagAddress" class="control-label"></label>
+                <input asp-for="TagAddress" class="form-control" />
+                <span asp-validation-for="TagAddress" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="LastUpdated" class="control-label"></label>
+                <input asp-for="LastUpdated" class="form-control" />
+                <span asp-validation-for="LastUpdated" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="NearExpirationDateWarningCount" class="control-label"></label>
+                <input asp-for="NearExpirationDateWarningCount" class="form-control" />
+                <span asp-validation-for="NearExpirationDateWarningCount" class="text-danger"></span>
+            </div>
+            <div class="form-group">
+                <label asp-for="ExpiredWarningCount" class="control-label"></label>
+                <input asp-for="ExpiredWarningCount" class="form-control" />
+                <span asp-validation-for="ExpiredWarningCount" class="text-danger"></span>
+            </div>
+            <div class="form-group form-check">
+                <label class="form-check-label">
+                    <input class="form-check-input" asp-for="DiscrepancyExists" /> @Html.DisplayNameFor(model => model.DiscrepancyExists)
+                </label>
+            </div>
+            <div class="form-group">
+                <input type="submit" value="Create" class="btn btn-primary" />
+            </div>
+        </form>
+    </div>
+</div>
+
+<div>
+    <a asp-action="Index">Back to List</a>
+</div>
+
+</body>
+</html>
