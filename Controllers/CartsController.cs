@@ -8,115 +8,109 @@ using System.Threading.Tasks;
 
 namespace ICTS_API.Controllers
 {
+    [Route("carts")]
     [ApiController]
     public class CartsController : Controller
     {
-        private readonly MyWebApiContext _context;
+        private readonly ICTS_Context _context;
 
-        public CartsController(MyWebApiContext context)
+        public CartsController(ICTS_Context context)
         {
             _context = context;
         }
 
-        [Route("carts")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cart>>> GetAllCarts()
+        public async Task<ActionResult<IEnumerable<CartDetailsDTO>>> GetAllCarts()
         {
-            return await _context.Carts.Include(c => c.Products).Include(c => c.Location).ToListAsync();
+            return await _context.Carts
+                .Include(c => c.Products)
+                .Include(c => c.Site)
+                .Select(x => CartToCartDetailsDTO(x))
+                .ToListAsync();
         }
 
-        [Route("carts/{CartID}")]
+        [Route("{CartId}")]
         [HttpGet]
-        public async Task<ActionResult<Cart>> GetCartByID(int CartID)
+        public async Task<ActionResult<CartDetailsDTO>> GetCartByCartId(int CartId)
         {
-            var cart = await _context.Carts.Include(c => c.Products).Include(c => c.Location).FirstOrDefaultAsync(c =>c.CartID == CartID);
+            var cart = await _context.Carts
+                .Include(c => c.Products)
+                .Include(c => c.Site)
+                .FirstOrDefaultAsync(c => c.CartId == CartId);
 
             if (cart == null)
             {
                 return NotFound();
             }
 
-            return cart;
+            return CartToCartDetailsDTO(cart);
         }
 
-        [Route("carts/tagaddress/{TagAddress}")]
+        [Route("lotid/{LotId}")]
         [HttpGet]
-        public async Task<ActionResult<Cart>> GetCartByTagAddress(string TagAddress)
+        public async Task<ActionResult<CartDetailsDTO>> GetCartByProductLotId(string LotId)
         {
-            var cart = await _context.Carts.Include(c => c.Products).Include(c => c.Location).FirstOrDefaultAsync(c => c.TagAddress == TagAddress);
+            var cart = await _context.Carts
+                .Include(c => c.Products)
+                .Include(c => c.Site)
+                .Where(c => c.Products.Any(p => p.LotId == LotId))
+                .FirstOrDefaultAsync();
 
             if (cart == null)
             {
                 return NotFound();
             }
 
-            return cart;
+            return CartToCartDetailsDTO(cart);
         }
 
-        [Route("carts/lotid/{LotID}")]
+        [Route("productname/{ProductName}")]
         [HttpGet]
-        public async Task<ActionResult<Cart>> GetCartByLotID(string LotID)
+        public async Task<ActionResult<IEnumerable<CartDetailsDTO>>> GetCartsByProductName(string ProductName)
         {
-            return await _context.Carts.Include(c => c.Products).Include(c => c.Location)
-            .Where(c => c.Products.Any(p => p.LotID == LotID)).FirstOrDefaultAsync();
+            return await _context.Carts
+                .Include(c => c.Products)
+                .Include(c => c.Site)
+                .Where(c => c.Products.Any(p => p.ProductName == ProductName))
+                .Select(x => CartToCartDetailsDTO(x))
+                .ToListAsync();
         }
 
-        [Route("carts/productname/{ProductName}")]
+        [Route("expirationdate/{ExpirationDate}")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cart>>> GetCartsByProductName(string ProductName)
+        public async Task<ActionResult<IEnumerable<CartDetailsDTO>>> GetCartsByProductExpirationDate(DateTime ExpirationDate)
         {
-            return await _context.Carts.Include(c => c.Products).Include(c => c.Location)
-            .Where(c => c.Products.Any(p => p.ProductName == ProductName)).ToListAsync();
-        }
-      
-        [Route("carts/expirationdate/{ExpirationDate}")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cart>>> GetCartsByProductExpirationDate(DateTime ExpirationDate)
-        {
-            return await _context.Carts.Include(c => c.Products).Include(c => c.Location)
-            .Where(c => c.Products.Any(p => p.ExpirationDate == ExpirationDate)).ToListAsync();
+            return await _context.Carts
+                .Include(c => c.Products)
+                .Include(c => c.Site)
+                .Where(c => c.Products.Any(p => p.ExpirationDate == ExpirationDate))
+                .Select(x => CartToCartDetailsDTO(x))
+                .ToListAsync();
         }
 
-        [Route("carts/nearexpiration")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cart>>> GetCartsWithProductsNearExpirationDate()
-        {
-            return await _context.Carts.Include(c => c.Products).Include(c => c.Location)
-            .Where(c => c.Products.Any(p => (p.ExpirationDate - DateTime.Today).TotalDays <= 7
-            && (p.ExpirationDate - DateTime.Today).TotalDays > 0)).ToListAsync();
-        }
-
-        [Route("carts/expired")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cart>>> GetCartsWithExpiredProducts()
-        {
-            return await _context.Carts.Include(c => c.Products).Include(c => c.Location)
-            .Where(c => c.Products.Any(p => (p.ExpirationDate - DateTime.Today).TotalDays <= 0)).ToListAsync();
-        }
-
-        [Route("carts/sitename/{SiteName}")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Cart>>> GetCartsBySiteName(string SiteName)
-        {
-            return await _context.Carts.Include(c => c.Products).Include(c => c.Location)
-            .Where(c => c.Location.Site.SiteName == SiteName).ToListAsync();
-        }
-
-        [Route("carts")]
         [HttpPost]
-        public async Task<ActionResult<Cart>> AddCart(Cart cart)
+        public async Task<ActionResult<CartDetailsDTO>> AddCart(CartDTO cartDTO)
         {
+            var cart = new Cart
+            {
+                CartName = "x4JT" + DateTime.Now.Ticks.ToString("x"),
+                TagAddress = cartDTO.TagAddress
+            };
+
             _context.Carts.Add(cart);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetCartByID), new { cartID = cart.CartID }, cart);
+            return CreatedAtAction(
+                nameof(GetCartByCartId),
+                new { cartId = cart.CartId },
+                CartToCartDetailsDTO(cart));
         }
 
-        [Route("carts/{CartID}")]
+        [Route("{CartId}")]
         [HttpDelete]
-        public async Task<IActionResult> RemoveCart(int CartID)
+        public async Task<IActionResult> RemoveCart(int CartId)
         {
-            var cart = await _context.Carts.FindAsync(CartID);
+            var cart = await _context.Carts.FindAsync(CartId);
 
             if (cart == null)
             {
@@ -129,12 +123,48 @@ namespace ICTS_API.Controllers
             return NoContent();
         }
 
-        //TODO:UpdateCarts*********************************************************************************
-        //[Route("carts")]
-        //[HttpPut]
-        //public void UpdateCart(int CartID, [FromBody]string TagAddress)
-        //{
+        [HttpPut("{CartId}")]
+        public async Task<IActionResult> UpdateCart(int CartId, CartLocationDTO cartLocationDTO)
+        {
+            if (CartId != cartLocationDTO.CartId)
+            {
+                return BadRequest();
+            }
 
-        //}
+            var cart = await _context.Carts.FindAsync(CartId);
+            if (cart == null)
+            {
+                return NotFound();
+            }
+
+            cart.LastUpdated = DateTime.Now;
+            cart.SiteId = cartLocationDTO.SiteId;
+            //cart.Coordinates = cartLocationDTO.Coordinates;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException) when (!CartExists(CartId))
+            {
+                return NotFound();
+            }
+
+            return NoContent();
+        }
+
+        private bool CartExists(int CartId) =>
+             _context.Carts.Any(c => c.CartId == CartId);
+
+        private static CartDetailsDTO CartToCartDetailsDTO(Cart cart) =>
+            new CartDetailsDTO
+            {
+                CartId = cart.CartId,
+                CartName = cart.CartName,
+                TagAddress = cart.TagAddress,
+                LastUpdated = cart.LastUpdated,
+                Site = cart.Site,
+                Products = cart.Products
+            };
     }
 }

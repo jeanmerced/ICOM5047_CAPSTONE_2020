@@ -1,96 +1,79 @@
 using ICTS_API.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
 namespace ICTS_API.Controllers
 {
+    [Route("products")]
     [ApiController]
     public class ProductsController : Controller
     {
-        private readonly MyWebApiContext _context;
+        private readonly ICTS_Context _context;
 
-        public ProductsController(MyWebApiContext context)
+        public ProductsController(ICTS_Context context)
         {
             _context = context;
         }
 
-        [Route("products/cartid/{CartID}")]
+        [Route("cartid/{CartId}")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProductsByCartID(int CartID)
+        public async Task<ActionResult<IEnumerable<ProductDetailsDTO>>> GetProductsByCartId(int CartId)
         {
-            return await _context.Products.Include(p => p.Cart).ThenInclude(c => c.Location)
-                .Where(p => p.CartID == CartID).ToListAsync();
+            return await _context.Products
+                .Include(p => p.Cart)
+                    .ThenInclude(c => c.Site)
+                .Where(p => p.CartId == CartId)
+                .Select(x => ProductsToProductDetailsDTO(x))
+                .ToListAsync();
         }
 
-        [Route("products/cartid/{CartID}/lotid/{LotID}")]
+        [Route("{ProductId}")]
         [HttpGet]
-        public async Task<ActionResult<Product>> GetProductByLotID(int CartID, string LotID)
+        public async Task<ActionResult<ProductDetailsDTO>> GetProductById(int ProductId)
         {
-            var product = await _context.Products.Include(p => p.Cart).ThenInclude(c => c.Location)
-                .Where(p => p.CartID == CartID && p.LotID == LotID).FirstOrDefaultAsync();
+            var product = await _context.Products
+                .Include(p => p.Cart)
+                    .ThenInclude(c => c.Site)
+                .Where(p => p.ProductId == ProductId)
+                .FirstOrDefaultAsync();
 
             if (product == null)
             {
                 return NotFound();
             }
 
-            return product;
+            return ProductsToProductDetailsDTO(product);
         }
 
-        [Route("products/cartid/{CartID}/productname/{ProductName}")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProductsByName(int CartID, string ProductName)
-        {
-            return await _context.Products.Include(p => p.Cart).ThenInclude(c => c.Location)
-                .Where(p => p.CartID == CartID && p.ProductName == ProductName).ToListAsync();
-        }
-
-        [Route("products/cartid/{CartID}/expirationdate/{ExpirationDate}")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProductsByExpirationDate(int CartID, DateTime ExpirationDate)
-        {
-            return await _context.Products.Include(p => p.Cart).ThenInclude(c => c.Location)
-                .Where(p => p.CartID == CartID && p.ExpirationDate == ExpirationDate).ToListAsync();
-        }
-
-        [Route("products/cartid/{CartID}/nearexpiration")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetProductsNearExpirationDate(int CartID)
-        {
-            return await _context.Products.Include(p => p.Cart).ThenInclude(c => c.Location)
-                .Where(p => p.CartID == CartID
-                && (p.ExpirationDate - DateTime.Today).TotalDays <= 7
-                && (p.ExpirationDate - DateTime.Today).TotalDays > 0).ToListAsync();
-        }
-
-        [Route("products/cartid/{CartID}/expired")]
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<Product>>> GetExpiredProducts(int CartID)
-        {
-            return await _context.Products.Include(p => p.Cart).ThenInclude(c => c.Location)
-                .Where(p => p.CartID == CartID
-                && (p.ExpirationDate - DateTime.Today).TotalDays <= 0).ToListAsync();
-        }
-
-        [Route("products")]
         [HttpPost]
-        public async Task<ActionResult<Product>> AddProductToCart(Product product)
+        public async Task<ActionResult<ProductDetailsDTO>> AddProductToCart(ProductDTO productDTO)
         {
+            var product = new Product
+            {
+                LotId = productDTO.LotId,
+                ProductName = productDTO.ProductName,
+                ExpirationDate = productDTO.ExpirationDate,
+                Quantity = productDTO.Quantity,
+                VirtualSiteName = productDTO.VirtualSiteName,
+                CartId = productDTO.CartId
+            };
+
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetProductByLotID), new { cartID = product.CartID, lotID = product.LotID }, product);
+            return CreatedAtAction(
+                nameof(GetProductById),
+                new { productId = product.ProductId },
+                ProductsToProductDetailsDTO(product));
         }
-
-        [Route("products/{LotID}")]
+        [Route("{ProductId}")]
         [HttpDelete]
-        public async Task<IActionResult> RemoveProductFromCart(string LotID)
+        public async Task<IActionResult> RemoveProductFromCart(int ProductId)
         {
-            var product = await _context.Products.FindAsync(LotID);
+            var product = await _context.Products.FindAsync(ProductId);
 
             if (product == null)
             {
@@ -103,12 +86,25 @@ namespace ICTS_API.Controllers
             return NoContent();
         }
 
-        //TODO:UpdateProduct*********************************************************************************
+        // TODO:UpdateProduct
         //[Route("products")]
         //[HttpPut]
         //public async Task<ActionResult<Product>> UpdateProduct(int CartID, [FromBody]string TagAddress)
         //{
         //    return null;
         //}
+
+        private static ProductDetailsDTO ProductsToProductDetailsDTO(Product product) =>
+            new ProductDetailsDTO
+            {
+                ProductId = product.ProductId,
+                LotId = product.LotId,
+                ProductName = product.ProductName,
+                ExpirationDate = product.ExpirationDate,
+                Quantity = product.Quantity,
+                VirtualSiteName = product.VirtualSiteName,
+                CartId = product.CartId,
+                Cart = product.Cart
+            };
     }
 }

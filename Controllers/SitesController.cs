@@ -7,28 +7,28 @@ using System.Threading.Tasks;
 
 namespace ICTS_API.Controllers
 {
+    [Route("sites")]
     [ApiController]
     public class SitesController : Controller
     {
-        private readonly MyWebApiContext _context;
+        private readonly ICTS_Context _context;
 
-        public SitesController(MyWebApiContext context)
+        public SitesController(ICTS_Context context)
         {
             _context = context;
         }
 
-        [Route("sites")]
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Site>>> GetAllSites()
         {
             return await _context.Sites.ToListAsync();
         }
 
-        [Route("sites/{SiteID}")]
+        [Route("{SiteID}")]
         [HttpGet]
-        public async Task<ActionResult<Site>> GetSiteByID(int SiteID)
+        public async Task<ActionResult<Site>> GetSiteById(int SiteId)
         {
-            var site = await _context.Sites.FindAsync(SiteID);
+            var site = await _context.Sites.FindAsync(SiteId);
 
             if (site == null)
             {
@@ -38,21 +38,28 @@ namespace ICTS_API.Controllers
             return site;
         }
 
-        [Route("sites")]
         [HttpPost]
-        public async Task<ActionResult<Site>> AddSite(Site site)
+        public async Task<ActionResult<Site>> AddSite(SiteDTO siteDTO)
         {
+            var site = new Site
+            {
+                SiteName = siteDTO.SiteName
+            };
+
             _context.Sites.Add(site);
             await _context.SaveChangesAsync();
 
-            return CreatedAtAction(nameof(GetSiteByID), new { siteID = site.SiteID }, site);
+            return CreatedAtAction(
+                nameof(GetSiteById),
+                new { siteId = site.SiteId },
+                site);
         }
 
-        [Route("sites/{SiteID}")]
+        [Route("{SiteId}")]
         [HttpDelete]
-        public async Task<IActionResult> RemoveSite(int SiteID)
+        public async Task<IActionResult> RemoveSite(int SiteId)
         {
-            var site = await _context.Sites.FindAsync(SiteID);
+            var site = await _context.Sites.FindAsync(SiteId);
 
             if (site == null)
             {
@@ -65,12 +72,36 @@ namespace ICTS_API.Controllers
             return NoContent();
         }
 
-        //TODO:UpdateSites*********************************************************************************
-        //[Route("sites")]
-        //[HttpPut]
-        //public void UpdateSite()
-        //{
+        [HttpPut("{SiteId}")]
+        public async Task<IActionResult> UpdateSite(int SiteId, Site site)
+        {
+            if (SiteId != site.SiteId)
+            {
+                return BadRequest();
+            }
 
-        //}
+            _context.Entry(site).State = EntityState.Modified;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                if (!SiteExists(SiteId))
+                {
+                    return NotFound();
+                }
+                else
+                {
+                    throw;
+                }
+            }
+
+            return NoContent();
+        }
+
+        private bool SiteExists(int SiteId) =>
+             _context.Sites.Any(s => s.SiteId == SiteId);
     }
 }
