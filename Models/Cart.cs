@@ -1,87 +1,24 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Text.Json.Serialization;
 
 namespace ICTS_API.Models
 {
     public class Cart
     {
-        public int CartID { get; set; }
+        public int CartId { get; set; }
 
-        [Required]
+        public string CartName { get; set; }
+
         public string TagAddress { get; set; }
 
-        //TODO: neccesary?
-        public DateTime LastUpdated { get; set; }
+        public DateTime? LastUpdated { get; set; }
 
-        private int nearExpirationDateWarningCount;
-        public int NearExpirationDateWarningCount 
-        {
-            get
-            {
-                nearExpirationDateWarningCount = 0;
-                if (Products != null)
-                {
-                    foreach (var product in Products)
-                    {
-                        var dayDifference = (product.ExpirationDate - DateTime.Today).TotalDays;
-                        if (dayDifference <= 7 && dayDifference > 0)
-                        {
-                            nearExpirationDateWarningCount++;
-                        }
-                    }
-                }
-                return nearExpirationDateWarningCount;
-            }
-        }
+        // TODO: public TYPE Coordinates { get; set; }
 
-        private int expiredWarningCount;
-        public int ExpiredWarningCount 
-        {
-            get
-            {
-                expiredWarningCount = 0;
-                if (Products != null)
-                {
-                    foreach (var product in Products)
-                    {
-                        var dayDifference = (product.ExpirationDate - DateTime.Today).TotalDays;
-                        if (dayDifference <= 0)
-                        {
-                            expiredWarningCount++;
-                        }
-                    }
-                }
-                return expiredWarningCount;
-            }
-        }
+        public int? SiteId { get; set; } // Foreign Key
 
-        private bool discrepancyExists;
-        public bool DiscrepancyExists 
-        {
-            get
-            {
-                discrepancyExists = false;
-                if (Products != null && Location != null)
-                {
-                    foreach (var product in Products)
-                    {
-                        if (product.VirtualSiteID != Location.SiteID)
-                        {
-                            discrepancyExists = true;
-                            break;
-                        }
-                    }
-                }
-                return discrepancyExists;
-            }
-        }
+        public Site Site { get; set; } // Navigation Property
 
-        [JsonIgnore]
-        public List<Product> Products { get; set; }
-
-        [JsonIgnore]
-        public Location Location { get; set; }
+        public List<Product> Products { get; set; } // Navigation Property
     }
 }
